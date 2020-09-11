@@ -79,7 +79,7 @@ start:  mov ax, cs
 SearchLoaderInSector:
 
         ; if we already look through all sectors then there is no loader in root dir
-        cmp [LeftSecToSearchRoot], 0
+        cmp word [LeftSecToSearchRoot], 0
         jz NoLoader
 
         ; put the readin sector to 08000
@@ -109,7 +109,7 @@ SearchLoaderInSector:
             cmp cx, 0
             jz LoaderFound
 
-            lobsb
+            lodsb
             cmp al, byte [di]
 
             jnz EntryDifferent
@@ -120,7 +120,7 @@ SearchLoaderInSector:
             pop cx
             dec cx
 
-            and di 0ffe0H
+            and di, 0ffe0H
             add di, 20H
             mov si, LoadFileName
             jmp compareEntries
@@ -131,8 +131,46 @@ SearchLoaderInSector:
         dec word [LeftSecToSearchRoot]
         jmp SearchLoaderInSector         
 
-    LoaderFound:
+LoaderFound:
 
+        ; basically find the start sector num for loader
+        and di, 0ffe0H
+        add di, 001AH
+
+        mov ax, word [es:di]
+        mov cx, RootOccupySecNum
+        push ax
+        add ax, cx
+        add ax, SectorBalance
+
+        ; let es:bx to 0x10000
+        mov cx, ax
+        mov ax, BaseSegOfLoader
+        mov es, ax
+        mov bx, OffsetOfLoader
+        mov ax, cx              ; ax is the sector of loader to read
+
+    LoadingLoaderSectors:
+        mov cl, 1
+
+        call ReadSectors
+        add bx, 512
+
+        pop ax
+        call getFATEntryNextClus
+
+        cmp ax, 0FFFH
+        jz LoaderIsLoaded
+
+        add ax, SectorBalance
+        add ax, RootOccupySecNum
+        push ax
+
+        jmp LoadingLoaderSectors
+
+LoaderIsLoaded:
+        
+        jmp $
 
 NoLoader:
         mov ax, 1301H
@@ -153,9 +191,10 @@ NoLoader:
 
 ReadSectors:
 
-
+        push ax
         push bp
         push bx
+        push dx
 
         mov bp, sp
         mov byte [bp-2], cl
@@ -185,11 +224,67 @@ ReadSectors:
         int 13H
         jc reading
 
+        pop dx
         pop bx
         pop bp
+        pop ax
 
         ret
 
+; ==== get the FAT entry for next cluster
+; input:    ax = DIR_FstClus
+; output:   ax = next cluster
+
+getFATEntryNextClus:
+        push es
+        push ax
+        push bx
+        push cx
+
+        push ax
+
+        mov ax, 0
+        mov es, ax
+
+        pop ax
+
+        mov bx, 3
+        mul bx
+        mov bx, 2
+        div bx
+
+        cmp dx, 0
+        jz EvenEntry
+        mov byte [OddOrEven], 1
+
+    ; now ax is the byte offset for the whole FAT
+    EvenEntry:
+        xor dx, dx
+        mov bx, [BPB_BytesPerSec]
+        div bx
+
+        ; now ax is the sector num and the remainder is the offset
+
+        mov bx, 8000H
+        add ax, FAT1StartSecNum
+
+        mov cl, 2
+        call ReadSectors
+
+        add bx, dx
+        mov ax, [es:bx]
+
+        cmp byte [OddOrEven], 0
+        jz EvenEntryGoOn
+        shr ax, 4
+
+    EvenEntryGoOn:
+        and ax, 0FFFH
+
+        pop cx
+        pop bx
+        pop ax
+        pop es
 
 
 StartBootingMsg:    db "start booting"
@@ -198,6 +293,7 @@ LoaderErrorMsg:     db "No Loader Found"
 
 SectorNo:               dw 0
 LeftSecToSearchRoot:    dw RootOccupySecNum
+OddOrEven:              db 0
 
 
         times (510-($-$$)) db 0
