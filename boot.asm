@@ -114,6 +114,7 @@ SearchLoaderInSector:
 
             jnz EntryDifferent
             inc di
+            dec cx
             jmp compareEntry
 
         EntryDifferent:
@@ -170,7 +171,7 @@ LoaderFound:
 
 LoaderIsLoaded:
         
-        jmp $
+        jmp BaseSegOfLoader:OffsetOfLoader
 
 NoLoader:
         mov ax, 1301H
@@ -286,9 +287,11 @@ getFATEntryNextClus:
         pop ax
         pop es
 
+        ret
+
 
 StartBootingMsg:    db "start booting"
-LoadFileName:       db "LOADER_BIN", 0
+LoadFileName:       db "LOADER  BIN", 0
 LoaderErrorMsg:     db "No Loader Found"
 
 SectorNo:               dw 0
