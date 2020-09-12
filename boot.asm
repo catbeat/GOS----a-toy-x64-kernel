@@ -163,9 +163,9 @@ LoaderFound:
         cmp ax, 0FFFH
         jz LoaderIsLoaded
 
+        push ax
         add ax, SectorBalance
         add ax, RootOccupySecNum
-        push ax
 
         jmp LoadingLoaderSectors
 
@@ -178,7 +178,7 @@ NoLoader:
         mov bx, 000FH
         mov dx, 0100H
 
-        mov cx, 21
+        mov cx, 15
         mov bp, LoaderErrorMsg
 
         int 10H
@@ -198,11 +198,16 @@ ReadSectors:
         push dx
 
         mov bp, sp
+        sub esp, 2
         mov byte [bp-2], cl
+
+        push bx
 
         ; just divide the num of sectors on a road
         mov bl, [BPB_SecPerTrk]
         div bl
+
+        pop bx
 
         inc ah          ; we get the start sector num at ah
 
@@ -213,7 +218,7 @@ ReadSectors:
         and dh, 1
 
         ; get the magnetic road num
-        shr al, 2
+        shr al, 1
         mov ch, al
 
         ; give the drive num
@@ -224,6 +229,8 @@ ReadSectors:
         mov al, byte [bp-2]
         int 13H
         jc reading
+
+        add esp, 2
 
         pop dx
         pop bx
@@ -238,7 +245,6 @@ ReadSectors:
 
 getFATEntryNextClus:
         push es
-        push ax
         push bx
         push cx
 
@@ -284,7 +290,6 @@ getFATEntryNextClus:
 
         pop cx
         pop bx
-        pop ax
         pop es
 
         ret
