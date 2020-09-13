@@ -252,6 +252,7 @@ getFATEntryNextClus:
 
         mov ax, 0
         mov es, ax
+        mov byte [OddOrEven], 0
 
         pop ax
 
