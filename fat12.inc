@@ -1,7 +1,7 @@
-RootDirSectors	        equ	14
-SectorNumOfRootDirStart	equ	19
-SectorNumOfFAT1Start	equ	1
-SectorBalance	        equ	17	
+RootOccupySecNum    equ 14
+RootStartSecNum     equ 19
+FAT1StartSecNum     equ 1
+SectorBalance       equ 17 
 
 	BS_OEMName	        db	'GosBoot '
 	BPB_BytesPerSec	    dw	512
