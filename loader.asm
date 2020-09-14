@@ -269,7 +269,7 @@ MemStructGetting:
 
 MemStructGetFail:
     mov ax, 1301H
-    mov bx, 008CH
+    mov bx, 0084H
     mov dx, 0500H
     mov cx, 26
 
@@ -324,7 +324,7 @@ GetSVGAInfo:
 
     ; ==== FAIL
     mov ax, 1301H
-    mov bx, 008CH
+    mov bx, 0084H
     mov dx, 0900H
     mov cx, 26
 
@@ -450,11 +450,14 @@ GetSVGAModeInfoFinish:
     cmp ax, 004FH
     jnz SetSVGAModeFail
 
+;==== I finally finish the problem of SVGA, the setting is really boring
+;==== now it's time for real mode to be protection mode to be long mode
+
 
 ; no kernel found, error!
 NoKernel:
     mov ax, 1301H
-    mov bx, 008CH
+    mov bx, 0084H
     mov dx, 0300H
 
     mov cx, 16
@@ -631,25 +634,25 @@ DisplayALinHex:
 
 
 ;=============================================================
-StartLoaderMsg:         db "Start Loader"
-KernelFileName:         db "KERNEL  BIN"
-NoKernelMsg:            db "No Kernel Found!"
+StartLoaderMsg:             db "Start Loader"
+KernelFileName:             db "KERNEL  BIN"
+NoKernelMsg:                db "No Kernel Found!"
 
-SectorNo:               dw 0
-LeftSecToSearchRoot:    dw RootOccupySecNum
-OddOrEven:              db 0
+SectorNo:                   dw 0
+LeftSecToSearchRoot:        dw RootOccupySecNum
+OddOrEven:                  db 0
 
-DisplayPosition         dd 0
+DisplayPosition:            dd 0
 
-OffsetForToloadKernel   dd offsetOfKernel
+OffsetForToloadKernel:      dd offsetOfKernel
 
-StartGetMemStructMsg    db "Start get memory struct."
-MemStructGetFailMsg     db "Fail to get memory struct!"
-MemStructGetDoneMsg     db "Memory Struct is loaded."
+StartGetMemStructMsg:       db "Start get memory struct."
+MemStructGetFailMsg:        db "Fail to get memory struct!"
+MemStructGetDoneMsg:        db "Memory Struct is loaded."
 
-StartGetSVGAVBEInfoMsg  db "Start get SVGA VBE info"
-GetSVGAVBEInfoFailMsg   db "Fail to get SVGA VBE Info!"
-GetSVGAVBEInfoOKMsg     db "Get SVGA VBE Info."
-StartGetSVGAModeInfoMsg db "Start get SVGA mode info"
-GetSVGAModeInfoFailMsg  db "Fail to get SVGA mode info!"
-GetSVGAModeInfoOKMsg    db "Get SVGA mode info."
+StartGetSVGAVBEInfoMsg:     db "Start get SVGA VBE info"
+GetSVGAVBEInfoFailMsg:      db "Fail to get SVGA VBE Info!"
+GetSVGAVBEInfoOKMsg:        db "Get SVGA VBE Info."
+StartGetSVGAModeInfoMsg:    db "Start get SVGA mode info"
+GetSVGAModeInfoFailMsg:     db "Fail to get SVGA mode info!"
+GetSVGAModeInfoOKMsg:       db "Get SVGA mode info."
