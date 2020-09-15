@@ -19,6 +19,13 @@ GDT_Ptr:        dw GDT_len-1
 SELEC_CODE:     equ DESC_CODE-DESC_NULL
 SELEC_DATA:     equ DESC_DATA-DESC_NULL
 
+IDT_start:      times 0x50 dq 0
+IDT_end:
+
+IDT_len         equ (IDT_end - IDT_start)
+IDT_Ptr:        dw IDT_len-1
+                dd IDT_start
+
 BaseOfkernel        equ 0x00
 offsetOfKernel      equ 0x100000
 
@@ -26,6 +33,17 @@ BaseTmpOfKernel     equ 0x00
 offsetTmpOfKernel   equ 0x7E00
 
 MemStructBuffer     equ 0x7E00
+
+GDT64_NULL:     dq 0x0000000000000000
+GDT64_CODE:     dq 0x0020980000000000
+GDT64_DATA:     dq 0x0000920000000000
+
+GDT64_len         equ $-GDT64_NULL
+GDT64_Ptr:      dw GDT64_len-1
+                dd GDT64_NULL
+
+SELEC64_CODE    equ GDT64_CODE-GDT64_NULL
+SELEC64_DATA    equ GDT64_DATA-GDT64_NULL
 
 [SECTION .s16]
 [BITS 16]
@@ -149,6 +167,24 @@ SearchNextSector:
     inc word [SectorNo]
     
     jmp SearchForKernelInSectors
+
+; no kernel found, error!
+NoKernel:
+    mov ax, 1301H
+    mov bx, 0084H
+    mov dx, 0300H
+
+    mov cx, 16
+
+    push ax
+    mov ax, ds
+    mov es, ax
+    pop ax
+
+    mov bp, NoKernelMsg
+
+    int 10H
+    jmp $
 
 KernelFound:
     mov ax, RootOccupySecNum
@@ -453,23 +489,99 @@ GetSVGAModeInfoFinish:
 ;==== I finally finish the problem of SVGA, the setting is really boring
 ;==== now it's time for real mode to be protection mode to be long mode
 
+    cli
 
-; no kernel found, error!
-NoKernel:
-    mov ax, 1301H
-    mov bx, 0084H
-    mov dx, 0300H
+    db 0x66
+    lgdt [GDT_Ptr]
 
-    mov cx, 16
+    dd 0x66
+    lidt [IDT_Ptr]
 
-    push ax
-    mov ax, ds
+    mov eax, cr0
+    or eax, 1
+    mov cr0, eax
+
+    jmp dword SELEC_CODE:Go_to_tmp_protect
+
+Go_to_tmp_protect:
+
+    mov ax, 0x10
+    mov ds, ax
     mov es, ax
-    pop ax
+    mov fs, ax
+    mov ss, ax
 
-    mov bp, NoKernelMsg
+    mov sp, 0x7E00
 
-    int 10H
+    call test_support_long_mode
+    test eax, eax
+
+    jz no_support_long_mode
+
+    mov dword [0x90000], 0x91007
+
+    mov dword [0x91000], 0x92007
+
+    mov dword [0x92000], 0x000083
+    mov dword [0x92008], 0x200083
+    mov dword [0x92010], 0x400083
+    mov dword [0x92018], 0x600083
+    mov dword [0x92020], 0x800083
+    mov dword [0x92028], 0xa00083
+
+    db 0x66
+
+    lgdt [GDT64_Ptr]
+
+    mov ax, 0x10
+    mov es, ax
+    mov ds, ax
+    mov gs, ax
+    mov fs, ax
+    mov ss, ax
+
+    mov sp, 0x7E00
+
+    ;==== open PAE
+    mov eax, cr4
+    bts eax, 5
+    mov cr4, eax
+
+    mov eax, 0x90000
+    mov cr3, eax
+
+    mov ecx, 0xC0000080
+    rdmsr
+
+    bts eax, 8
+    wrmsr
+
+    mov eax, cr0
+    bts eax, 0
+    bts eax, 31
+    mov cr0, eax
+
+    jmp SELEC64_CODE:offsetOfKernel
+
+test_support_long_mode:
+    mov eax, 0x80000000
+    cpuid
+
+    cmp eax, 0x80000001
+    setnb al
+    jb support_long_mode_done
+
+    mov eax, 0x80000001
+    cpuid
+
+    bt ebx, 29
+    setc al
+
+support_long_mode_done:
+    movzx eax, al
+    ret
+
+no_support_long_mode:
     jmp $
 
 ;=============================================================
