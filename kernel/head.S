@@ -44,3 +44,40 @@ TSS_ptr:
 TSS_limit:  .word TSS64_end - TSS64_Table - 1
 TSS_base:   .quad TSS64_Table
 
+;==== page init
+
+.align 8
+.org 1000H
+
+PML4:
+    .quad 0x102007
+    .fill 255, 8, 0
+    .quad 0x102007
+    .fill 255, 8, 0
+
+.org 2000H
+PDPT:
+    .quad 0x103007
+    .fill 511, 8, 0
+
+.org 3000H
+PDT:
+    .quad 0x000087
+    .quad 0x200087
+    .quad 0x400087
+    .quad 0x600087
+    .quad 0x800087
+    .quad 0xe0000087
+    .quad 0xe0200087
+    .quad 0xe0400087
+    .quad 0xe0600087
+    .quad 0xe0800087
+    .quad 0xe0a00087
+    .quad 0xe0c00087
+    .quad 0xe0e00087
+    .fill 499, 8, 0
+
+    
+
+
+
