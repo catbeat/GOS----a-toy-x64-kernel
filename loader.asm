@@ -164,7 +164,7 @@ SearchForKernelInSectors:
 
 SearchNextSector:
     dec word [LeftSecToSearchRoot]
-    inc word [SectorNo]
+    add word [SectorNo], 1
     
     jmp SearchForKernelInSectors
 
@@ -188,8 +188,8 @@ NoKernel:
 
 KernelFound:
     mov ax, RootOccupySecNum
-    and dx, 0ffe0H
-    add dx, 01AH
+    and di, 0ffe0H
+    add di, 01AH
 
     mov cx, word [es:di]
     push cx
@@ -217,10 +217,10 @@ KernelFound:
         push fs
         push bx
 
-        mov eax, BaseOfkernel
-        mov fs, eax
+        mov ax, BaseOfkernel
+        mov fs, ax
         mov cx, 200H            ; loop for 512 bytes
-        mov edi, [OffsetForToloadKernel]
+        mov edi, dword [OffsetForToloadKernel]
 
         ; transport the sector one by one byte
         TransportSector:
@@ -501,7 +501,10 @@ GetSVGAModeInfoFinish:
     or eax, 1
     mov cr0, eax
 
-    jmp dword SELEC_CODE:Go_to_tmp_protect
+    jmp dword SELEC64_CODE:Go_to_tmp_protect
+    
+[SECTION .s32]
+[BITS 32]
 
 Go_to_tmp_protect:
 
@@ -511,7 +514,7 @@ Go_to_tmp_protect:
     mov fs, ax
     mov ss, ax
 
-    mov sp, 0x7E00
+    mov esp, 0x7E00
 
     call test_support_long_mode
     test eax, eax
@@ -519,6 +522,7 @@ Go_to_tmp_protect:
     jz no_support_long_mode
 
     mov dword [0x90000], 0x91007
+    mov dword [0x90800], 0x91007
 
     mov dword [0x91000], 0x92007
 
@@ -574,7 +578,7 @@ test_support_long_mode:
     mov eax, 0x80000001
     cpuid
 
-    bt ebx, 29
+    bt edx, 29
     setc al
 
 support_long_mode_done:
