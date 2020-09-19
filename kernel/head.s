@@ -14,7 +14,6 @@ _start:
     mov $0x10, %ax
     mov %ax, %ds
     mov %ax, %es
-    mov %ax, %gs
     mov %ax, %fs
     mov %ax, %ss
 
@@ -31,28 +30,27 @@ _start:
     mov %ax, %fs
     mov %ax, %ss
 
-    mov $0x7E00, %rsp
+    movq $0x7E00, %rsp
 
-    mov $0x101000, %rax
-    mov %rax, %cr3
-    mov switch_seq(%rip), %rax
+    movq $0x101000, %rax
+    movq %rax, %cr3
+    movq switch_seg(%rip), %rax
     pushq $0x08
     pushq %rax
     lretq
 
-switch_seq:
+switch_seg:
     .quad entry_for_64
 
 entry_for_64:
-    mov $0x10, %rax
-    mov %rax, %ds
-    mov %rax, %es
-    mov %rax, %gs
-    mov %rax, %fs
-    mov %rax, %ss
+    movq $0x10, %rax
+    movq %rax, %ds
+    movq %rax, %es
+    movq %rax, %gs
+    movq %rax, %ss
 
-    mov $0xffff800000007E00, %rsp
-    mov go_to_kernel(%rip), %rax
+    movq $0xffff800000007E00, %rsp
+    movq go_to_kernel(%rip), %rax
     pushq $0x08
     pushq %rax
     lretq
